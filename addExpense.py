@@ -42,11 +42,14 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "You Clicked Return Money")
 
 temp = {}
-
+dictOfDebtors = {}
 
 def startCreateExpense(message):
     msg = bot.send_message(message.chat.id, "Enter Name of Expense") 
     bot.register_next_step_handler(msg, handleExpenseName)
+
+def averageBills():
+    return temp["totalAmtAfterTax"] / temp["totalNumofPpl"]
 
 
 def printSummary(message):
@@ -55,7 +58,7 @@ def printSummary(message):
             strWhoOweYou = ",".join(temp[key])
             msg = bot.send_message(message.chat.id, key +" "+strWhoOweYou)
         elif(key == "totalAmtAfterTax"):
-            msg = bot.send_message(message.chat.id, key +" "+str(temp[key]))
+            msg = bot.send_message(message.chat.id, key +" "+"{:.2f}".format(temp[key]))
         
         elif(type(temp[key]) == int):
             msg = bot.send_message(message.chat.id, key +" "+str(temp[key]))
@@ -63,6 +66,9 @@ def printSummary(message):
             print(key,temp[key])
             msg = bot.send_message(message.chat.id, key +" "+temp[key])
         
+    for key1 in dictOfDebtors:
+        for key2 in dictOfDebtors[key1]:
+            msg = bot.send_message(message.chat.id, key2 +" owes "+key1 +" $"+"{:.2f}".format(dictOfDebtors[key1][key2]))
 
 
 @bot.message_handler() 
@@ -73,7 +79,8 @@ def handleExpenseName(message): #input expense name
 
 def handleInputAmt(message): 
     temp["totalAmtBeforeTax"] = int(message.text)
-    msg = bot.send_message(message.chat.id, "Enter who owe you (eg @cy, @jp") 
+    msg = bot.send_message(message.chat.id, "Enter who owe you (eg @cy, @jp)")
+    print(msg)
     bot.register_next_step_handler(msg, handleWhoOweYou)
 
 
@@ -105,6 +112,13 @@ def handleGSTandTax(message):
     
 
 def handleSplitBills(message):
+    avgbill = float(averageBills())
+    your_username = "@"+ message.from_user.username
+    dictOfDebtors[your_username] = {}
+
+    for name in temp["whoOweYou"]:
+        dictOfDebtors[your_username][name] = avgbill
+
     printSummary(message)
 
 bot.polling()
