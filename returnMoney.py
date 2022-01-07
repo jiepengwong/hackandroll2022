@@ -60,10 +60,7 @@ def returnMon(message):
     bot.send_message(message.chat.id,"Your transaction has been updated in the database! ")
     # Connect to database
 
-# with open("names.csv","r") as csv_file:
-#     csvreader = csv.reader(csv_file)
 
-#     with open("new_ne")
 
 
 
