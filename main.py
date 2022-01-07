@@ -18,4 +18,4 @@ def send_welcome(message):
 
 
 # Check for messages
-bot.polling()
+bot.polling() #hello world
