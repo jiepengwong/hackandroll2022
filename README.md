@@ -6,4 +6,14 @@ Wong Jie Peng, Lee Chun Yang, Seth Teng Shann, Sim Wee Kee
 
 # Installation
 
-pip install
+## PythonTelegramBotAPI
+pip install pyTelegramBotAPI
+
+## dotenv
+pip install python-dotenv
+
+
+# To run the file
+python main.py
+Stop running using Ctrl + C 
+
