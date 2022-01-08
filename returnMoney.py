@@ -14,7 +14,6 @@ API_KEY = os.getenv('API_KEY')
 # Creation of telegram bot 
 bot = telebot.TeleBot(API_KEY) 
 
-
 @bot.message_handler(commands=['list'])
 #  Get all owe and lent amount from database
 def getList(message):
@@ -49,19 +48,6 @@ def getList(message):
 
     bot.send_message(message.chat.id, updatemsg) 
 
-
-        
-
-
-        
-
-
-
-            
-            
-           
-
-    
     
 def exit(message):
     bot.send_message(message.chat.id, "Exit") 
@@ -120,8 +106,6 @@ Please Choose the person which you want to pay using the replyMarkUp keyboard be
     """, reply_markup=markup)
 
 
-
-
 # returnMoney
 @bot.message_handler(commands=['returnMoney'])
 def returnMon(message):
@@ -152,10 +136,6 @@ def returnMon(message):
 
     bot.send_message(message.chat.id,"Your transaction has been updated in the database! ")
 
-
-
-
-
 # Create expense
 
 @bot.message_handler(commands=['createExpense'])
@@ -163,14 +143,33 @@ def startCreateExpense(message):
     msg = bot.send_message(message.chat.id, "Enter Name of Expense") 
     bot.register_next_step_handler(msg, handleExpenseName)
 
+#{'owner': [861768079, 'Wkaggin'], 'listing': ['cy', 'jp'], 
+# 'total': 100, 'totalNumofPpl': 3, 'splitMethod': 'Evenly', 'payableAmount': 33.333333333333336}
+def text(data): #@Wkaggin owes @Chun_yangg $117.00 @jpoggers owes @Chun_yangg $117.00
+    list = []
+    sum = "@"+ str(data['owner'][1]) + " owes "
+    if data['splitMethod'] == 'Manually':
+        for value in data['payableAmount']:
+            sum = sum + str(value) + " $" + str(data['payableAmount'][value])
+            list.append(sum)
+            sum = "@"+ str(data['owner'][1]) + " owes " #reset to update list
+    else:
+        for name in data['listing']:
+            roundoff = round(data['payableAmount'],2)
+            sum = sum + str(name) + " $" + str(roundoff)
+            list.append(sum)
+            sum = "@"+ str(data['owner'][1]) + " owes " #reset to update list
+        #print(data['payableAmount'])
 
-def printSummary(message):
+    return list
+
+def printSummary(message):  
     print(temp)
-    emptyString = ""
-    for key,value in temp.items():
-        print(key)
-        print(value)
-        emptyString += f"{key}: {value} \n"
+   # emptyString = ""
+   # for key,value in temp.items():
+       # print(key)
+        #print(value)
+       # emptyString += f"{key}: {value} \n"
         # if(key == "whoOweYou"):
         #     strWhoOweYou = ",".join(temp[key])
         #     msg = bot.send_message(message.chat.id, key +" "+strWhoOweYou)
@@ -181,13 +180,11 @@ def printSummary(message):
         #     msg = bot.send_message(message.chat.id, key +" "+str(temp[key]))
         # else:
         #     print(key,temp[key])
-    
-    
-
-    bot.send_message(message.chat.id,emptyString)
-        
-
-        
+    data = text(temp)
+    for m in data:
+        bot.send_message(message.chat.id,str(m))
+    #bot.send_message(message.chat.id,emptyString)
+      
 
 def handleExpenseName(message): #input expense name 
     print(message)
@@ -238,12 +235,7 @@ def handleSplitMethod(message):
             }
             records.insert_one(new_owe_instance)    
             records.insert_one(new_lend_instance)    
-
-
-            
-
-            
-            
+  
         msg = bot.send_message(message.chat.id, "Summary")
         printSummary(message)
         return
@@ -268,8 +260,6 @@ def handleManualSplit(message):
         details = person.split(":")
         temp["payableAmount"][details[0]] = details[1]
 
-
-
         new_owe_instance = {
             'name': person,
             'status': "OWE",
@@ -286,15 +276,11 @@ def handleManualSplit(message):
 
         }
 
-        
         records.insert_one(new_owe_instance)    
         records.insert_one(new_lend_instance)    
 
-
     msg = bot.send_message(message.chat.id, "Summary")
     printSummary(message)
-
-
 
 # def handleGSTandTax(message):
 #     temp["gstAndTax"] = int(message.text)
@@ -308,11 +294,5 @@ def handleManualSplit(message):
 def handleSplitBills(message):
     print("hi i am rendered")
     printSummary(message)
-
-
-
-
-
-
 
 bot.polling()
