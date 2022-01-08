@@ -1,7 +1,7 @@
 # Import python telegram bot  
 import telebot 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
- 
+from db import *
 # Import Api KEY 
 from dotenv import load_dotenv 
 import os 
@@ -107,6 +107,8 @@ def printSummary(message):
         #     msg = bot.send_message(message.chat.id, key +" "+str(temp[key]))
         # else:
         #     print(key,temp[key])
+    
+    
 
     bot.send_message(message.chat.id,emptyString)
         
@@ -114,19 +116,21 @@ def printSummary(message):
         
 
 def handleExpenseName(message): #input expense name 
-    temp["expenseName"] = message.text
+    print(message)
+    temp["owner"] = [message.from_user.id,message.from_user.username] 
+    temp["listing"] = message.text
     msg = bot.send_message(message.chat.id, "Enter Expense Amount Before Taxes") 
     bot.register_next_step_handler(msg, handleInputAmt)
 
 def handleInputAmt(message): 
     temp["total"] = int(message.text)
-    msg = bot.send_message(message.chat.id, "Enter who owe you (eg @cy, @jp") 
+    msg = bot.send_message(message.chat.id, "Enter your FRIEND thats owe you money, it can multiple , just seperate using a space, using the desired username (eg Chun_yangg jpoggers") 
     bot.register_next_step_handler(msg, handleWhoOweYou)
 
 
 def handleWhoOweYou(message): 
     listOfWhoOweYou = message.text.split()
-    temp["whoOweYou"] = listOfWhoOweYou
+    temp["listing"] = listOfWhoOweYou
     temp["totalNumofPpl"] = len(listOfWhoOweYou) + 1
     splitMethodOptions(message)
 
@@ -134,24 +138,48 @@ def splitMethodOptions(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.row("Evenly")
     markup.row("Manually")
-    msg = bot.send_message(message.chat.id,"do you want to split evenly or manually?", reply_markup=markup)
+    msg = bot.send_message(message.chat.id,"Do you want to split evenly or manually?", reply_markup=markup)
     bot.register_next_step_handler(msg, handleSplitMethod)
 
 def handleSplitMethod(message):
     temp["splitMethod"] = message.text
 
     if temp["splitMethod"] == "Evenly":
-        temp["payableAmount"] = temp["total"] / (len(temp['whoOweYou']) + 1)
+        temp["payableAmount"] = temp["total"] / (len(temp['listing']) + 1)
+        for i in temp["listing"]:
+            new_owe_instance = {
+                'name': i,
+                'status': "OWE",
+                'money': temp["payableAmount"],
+                "oweto": message.from_user.username,
+                "lendto": "-"
+            }
+            new_lend_instance = {
+                 'name': message.from_user.username,
+                'status': "LEND",
+                'money': temp["payableAmount"],
+                "oweto": "-",
+                "lendto": i
+
+            }
+            records.insert_one(new_owe_instance)    
+            records.insert_one(new_lend_instance)    
+
+
+            
+
+            
+            
         msg = bot.send_message(message.chat.id, "Summary")
         printSummary(message)
         return
 
 
-    if temp["splitMethod"] == "Manually":
+    elif temp["splitMethod"] == "Manually":
         
         msg = bot.send_message(message.chat.id, """
-        You have selected manualy, please type the specific amount people owe you
-        (E.g jp:50,cy:50)
+        You have selected manualy, please type the specific amount people owe you such as... 
+(E.g jp:50,cy:50)
         """)
         bot.register_next_step_handler(msg,handleManualSplit)
 
@@ -165,6 +193,29 @@ def handleManualSplit(message):
     for person in testArray:
         details = person.split(":")
         temp["payableAmount"][details[0]] = details[1]
+
+
+
+        new_owe_instance = {
+            'name': person,
+            'status': "OWE",
+            'money': temp["payableAmount"][details[0]],
+            "oweto": message.from_user.username,
+            "lendto": "-"
+            }
+        new_lend_instance = {
+            'name': message.from_user.username,
+            'status': "LEND",
+            'money': temp["payableAmount"][details[0]],
+            "oweto": "-",
+            "lendto": person
+
+        }
+
+        
+        records.insert_one(new_owe_instance)    
+        records.insert_one(new_lend_instance)    
+
 
     msg = bot.send_message(message.chat.id, "Summary")
     printSummary(message)
