@@ -1,9 +1,12 @@
 # Import python telegram bot  
+from enum import unique
 import telebot 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from db import *
 # Import Api KEY 
 from dotenv import load_dotenv 
+from bson.objectid import ObjectId
+
 import os 
 
 load_dotenv() 
@@ -11,7 +14,55 @@ API_KEY = os.getenv('API_KEY')
 # Creation of telegram bot 
 bot = telebot.TeleBot(API_KEY) 
 
-people = ["a", "b"]
+
+@bot.message_handler(commands=['list'])
+#  Get all owe and lent amount
+def getList(message):
+    queryUserId = message.from_user.username
+    queryDatabase = {"name": queryUserId}
+    verdict = records.find(queryDatabase)
+    infoDict = {}
+    lendArr= []
+    oweArr= []
+    updatemsg = ""
+    for result in verdict:
+
+        if (result["status"] == "LEND"):
+            lendArr.append(result)
+        else:
+            oweArr.append(result)
+    
+    updatemsg += "LENDINGS \n"
+
+    for lendlistings in lendArr:
+        updatemsg += f"{lendlistings['lendto']} - {lendlistings['money']} \n"
+
+
+    
+    updatemsg += "OWNINGS \n"
+
+    for owelistings in oweArr:
+        updatemsg += f"{owelistings['oweto']} - {owelistings['money']} \n"
+
+
+    bot.send_message(message.chat.id, updatemsg) 
+
+
+        
+
+
+        
+
+
+
+            
+            
+           
+
+    
+    
+def exit(message):
+    bot.send_message(message.chat.id, "Exit") 
  
 @bot.message_handler(commands=['exit'])
 def exit(message):
@@ -36,24 +87,37 @@ def displayOptions():
    
     return markup 
  
-@bot.callback_query_handler(func=lambda call: True) 
-def callback_query(call): 
-    if call.data == "create_expense": 
-        startCreateExpense(call.message) 
-    elif call.data == "return_money": 
-        msg = bot.send_message(call.message.chat.id, "Type /pay to start")
+# @bot.callback_query_handler(func=lambda call: True) 
+# def callback_query(call): 
+#     if call.data == "create_expense": 
+#         startCreateExpense(call.message) 
+#     elif call.data == "return_money": 
+#         msg = bot.send_message(call.message.chat.id, "Type /pay to start")
 
-        bot.answer_callback_query(call.id, msg)
+#         bot.answer_callback_query(call.id, msg)
         
 
 temp = {}
+tempObjectID = ""
 # Return Money
 @bot.message_handler(commands=['payments'])
 def payment(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    #  Start query to data base here
+    usernameid = message.from_user.username
+    myquery = {"name":usernameid,"status": "OWE"}
+    verdict = records.find(myquery)
 
-    for i in people:
-        text = f"/returnMoney {i}"
+    # Found who he owned
+    peopleDict = {}
+    for result in verdict:
+        # Name : ID
+        # print(result['_id'])
+        peopleDict[result['oweto']] = result["_id"]
+
+
+    for key,value in peopleDict.items():
+        text = f"/returnMoney {key} id={value}"
         markup.row(text)
     bot.reply_to(message, 
     """Welcome to the payments section, 
@@ -67,6 +131,12 @@ Please Choose the person which you want to pay using the replyMarkUp keyboard be
 # returnMoney
 @bot.message_handler(commands=['returnMoney'])
 def returnMon(message):
+
+    # Query the user id here.
+
+   
+
+
     print(message)
 
     
@@ -74,6 +144,24 @@ def returnMon(message):
     # Get the name of the person 
     personName = text.split()
     print(personName)
+
+    usernameid = message.from_user.username
+    # select ""
+    myquery = {"name":usernameid,"status": "OWE","oweto": personName[1]}
+    
+    uniqueid = personName[len(personName) - 1][3:]
+    print(uniqueid)
+
+    querydelete = {"_id": uniqueid}
+
+    records.delete_one({"_id": ObjectId(uniqueid)})
+
+
+    
+
+
+
+    
 
     bot.send_message(message.chat.id,"Your transaction has been updated in the database! ")
     # Connect to database
@@ -155,7 +243,7 @@ def handleSplitMethod(message):
                 "lendto": "-"
             }
             new_lend_instance = {
-                 'name': message.from_user.username,
+                'name': message.from_user.username,
                 'status': "LEND",
                 'money': temp["payableAmount"],
                 "oweto": "-",
