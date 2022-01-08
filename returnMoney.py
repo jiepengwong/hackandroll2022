@@ -16,7 +16,7 @@ bot = telebot.TeleBot(API_KEY)
 
 
 @bot.message_handler(commands=['list'])
-#  Get all owe and lent amount
+#  Get all owe and lent amount from database
 def getList(message):
     queryUserId = message.from_user.username
     queryDatabase = {"name": queryUserId}
@@ -25,6 +25,8 @@ def getList(message):
     lendArr= []
     oweArr= []
     updatemsg = ""
+
+    # Generating the message to send
     for result in verdict:
 
         if (result["status"] == "LEND"):
@@ -84,18 +86,7 @@ def displayOptions():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.row("/createExpense")
     markup.row("/payments")
-   
     return markup 
- 
-# @bot.callback_query_handler(func=lambda call: True) 
-# def callback_query(call): 
-#     if call.data == "create_expense": 
-#         startCreateExpense(call.message) 
-#     elif call.data == "return_money": 
-#         msg = bot.send_message(call.message.chat.id, "Type /pay to start")
-
-#         bot.answer_callback_query(call.id, msg)
-        
 
 temp = {}
 tempObjectID = ""
@@ -104,17 +95,20 @@ tempObjectID = ""
 def payment(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     #  Start query to data base here
+    #  Check data base for instance structure 
     usernameid = message.from_user.username
+    # Query the columns
     myquery = {"name":usernameid,"status": "OWE"}
     verdict = records.find(myquery)
 
-    # Found who he owned
+    # Find out who the user owes in a particular telegram group
     peopleDict = {}
     for result in verdict:
         # Name : ID
         # print(result['_id'])
         peopleDict[result['oweto']] = result["_id"]
 
+    # Passing unique id via text through replyMarkUpKeyboard
 
     for key,value in peopleDict.items():
         text = f"/returnMoney {key} id={value}"
@@ -134,19 +128,16 @@ def returnMon(message):
 
     # Query the user id here.
 
-   
-
-
     print(message)
 
     
     text = message.text
-    # Get the name of the person 
+    # Get the name of the person that you are paying back to
     personName = text.split()
     print(personName)
 
     usernameid = message.from_user.username
-    # select ""
+    # Setting up query
     myquery = {"name":usernameid,"status": "OWE","oweto": personName[1]}
     
     uniqueid = personName[len(personName) - 1][3:]
@@ -154,17 +145,12 @@ def returnMon(message):
 
     querydelete = {"_id": uniqueid}
 
+    # Delete unique ID from owe list
     records.delete_one({"_id": ObjectId(uniqueid)})
 
 
-    
-
-
-
-    
 
     bot.send_message(message.chat.id,"Your transaction has been updated in the database! ")
-    # Connect to database
 
 
 
