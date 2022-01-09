@@ -1,0 +1,17 @@
+Things to work on for the future 
+
+Database management 
+
+Currently, instance from a user owning another person is deleted, however that record
+is not deleted from the lending side, this should be implemented in the future
+
+Improvement of keyboard 
+
+Currently the ReplyMarkUpKeyboard would appear for every user when someone uses it, this can be removed
+
+Hosting of bot
+
+Bot is now hosted locally instead of remotely 
+
+
+
